@@ -23,6 +23,11 @@ Per poter importare il progetto:
 
 Una volta clonato il repository, per l'esecuzione aprire la shell della directory dove è stato effettuato il clone e digitare:
     Python main.py
+Se non è mai stato fornito un access token, verrà richiesto su terminale tramite la stringa:
+<q>Enter the URL you were redirected to</q>
+
+Si aprirà una schermata al redirect uri fornito su https://developer.spotify.com/
+Copiare l'URI che è stato aperto (conterrà la stringa code=...) e inserirla sulla CLI.
 
 <h1 id="installazioni">INSTALLAZIONI ESSENZIALI</h1>
 <h2 id="windows">INSTALLAZIONE DI PYTHON SU WINDOWS</h2>
