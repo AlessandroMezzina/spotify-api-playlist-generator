@@ -4,6 +4,8 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import configparser
 
+from resources.readUtils import utils
+
 config = configparser.RawConfigParser()
 config.read('properties.properties')
 
@@ -30,7 +32,11 @@ def getUserLikedTracks():
     ### limit   : numero massimo di elementi da restituire. MINIMO=20, MASSIMO=50
     ### offset  : indice da dove iniziare la restituzione degli elementi
 
-    OFFSET=0
+    configOffset = utils["OFFSET"]
+    if configOffset.strip()!= "" :
+        OFFSET = int(configOffset)
+    else:
+        OFFSET=0
     LIMIT=50
     MARKET="IT"
 
@@ -48,6 +54,6 @@ def getUserLikedTracks():
             end=True
     return tracks
 
-getCurrentSong()
+#getCurrentSong()
 tracks = getUserLikedTracks()
 print("Hai messo 'mi piace' a " + str(len(tracks)) + " brani")
