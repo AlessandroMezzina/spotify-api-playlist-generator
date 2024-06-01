@@ -74,7 +74,7 @@ def checkNewTracks(tracks):
 
     return tracks[:numNewTracks]
 
-def createPlaylist():
+def createPlaylist(name):
     # ENDPOINT https://api.spotify.com/v1/users/{user_id}/playlists
     # PARAMETRI GET PER QUESTA CHIAMATA:
     ## user (OBBLIGATORIO)          : l'id dell'utente
@@ -82,10 +82,24 @@ def createPlaylist():
     ## public (OPZIONALE)           : se è pubblica o privata
     ## collaborative (OPZIONALE)    : se la playlist è in collaborazione
     ## description (OPZIONALE)      : descrizione della playlist
+    
+    #Spotify permette con lo stesso nome di creare anche più di una playlist. E' da evitare
+    user_id = sp.me()["id"]
+    sp.user_playlist_create(user=user_id, name=name)
 
-    user_id = sp.me()["id"];
-    sp.user_playlist_create(user=user_id, name="Playlist prova", description="Playlist prova")
-    return
+def retrievePlaylists():
+    # ENDPOINT https://api.spotify.com/v1/users/{user_id}/playlists
+    # PARAMETRI GET PER QUESTA CHIAMATA:
+    ## user (OBBLIGATORIO)          : l'id dell'utente
+    ## limit (OPZIONALE)            : Numero massimo di elementi da restituire (fino a 50)
+    ## offset (OPZIONALE)           : Da dove iniziare a restituire risultati
+
+    ## N.B. il metodo user_playlists utilizza già i parametri limit=50, offset=0.
+    ##      è necessario ridefinirlo per poter ottere risultati più di 50 playlist
+    
+    #Spotify permette con lo stesso nome di creare anche più di una playlist. E' da evitare
+    user_id = sp.me()["id"]
+    return sp.user_playlists(user=user_id) # Ritorna le playlist dell'utente fino a un massimo di 50
 
 class Track:
     songName = ""
@@ -107,7 +121,7 @@ oAuthscope = "user-read-email,user-read-private,user-library-read,user-read-play
 #autenticazione
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI,scope=oAuthscope))
 
-#getCurrentSong()
+getCurrentSong()
 tracks = getUserLikedTracks()
 #Trova solo i brani nuovi
 tracks = checkNewTracks(tracks)
@@ -117,4 +131,4 @@ if tracks:
 else:
     print("Nessun nuovo brano piaciuto è stato riconosciuto")
 
-#createPlaylist()
+#createPlaylist("Prova")
