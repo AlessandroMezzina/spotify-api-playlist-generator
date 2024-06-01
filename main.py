@@ -1,14 +1,20 @@
+#!/usr/bin/python    
+
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-import os
+import configparser
 
-CLIENT_ID = "a1d30ac423254bd58878ef580dc3f416";
-CLIENT_SECRET = "8e753bd92f1b4a7a9e2f2c869f1bbcb3"
-REDIRECT_URI = "https://open.spotify.com/"
+config = configparser.RawConfigParser()
+config.read('properties.properties')
+
+CLIENT_ID = config.get("Authentication","CLIENT_ID")
+CLIENT_SECRET = config.get("Authentication","CLIENT_SECRET")
+REDIRECT_URI = config.get("Authentication","REDIRECT_URI")
 
 # multiple scopes
 oAuthscope = "user-read-email,user-read-private,user-library-read,user-read-playback-state,user-modify-playback-state,user-read-currently-playing"
 
+#autenticazione
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI,scope=oAuthscope))
 
 def getCurrentSong():
@@ -42,5 +48,6 @@ def getUserLikedTracks():
             end=True
     return tracks
 
+getCurrentSong()
 tracks = getUserLikedTracks()
 print("Hai messo 'mi piace' a " + str(len(tracks)) + " brani")
