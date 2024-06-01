@@ -1,0 +1,7 @@
+## Questo file è un template di quello che dovrebbe essere il properties.properties
+## Le informazioni contenute in questo file devono essere recuperate dalle impostazioni di https://developer.spotify.com/
+
+[Authentication]
+CLIENT_ID = "your_client_id";
+CLIENT_SECRET = "your_secret_id"
+REDIRECT_URI = "your_redirect_uri"
