@@ -7,8 +7,7 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import configparser
-
-from resources.readUtils import utils
+import json
 
 def getCurrentSong():
     response_current_track = sp.current_user_playing_track()
@@ -23,31 +22,57 @@ def getUserLikedTracks():
     ### limit   : numero massimo di elementi da restituire. MINIMO=20, MASSIMO=50
     ### offset  : indice da dove iniziare la restituzione degli elementi
 
-    configOffset = utils["OFFSET"]
-    if configOffset.strip()!= "" :
-        OFFSET = int(configOffset)
-    else:
-        OFFSET=0
+    configOffset = json.load(open("utils.json", "r"))
+    OFFSET=0
     LIMIT=50
     MARKET="IT"
 
     tracks=[]
     end = False
 
+    ## Sono restituiti in ordine da 1 a n i brani piaciuti
+    ## I brani più recenti 1,2... sono restituiti per primi
     while not end:
         response = sp.current_user_saved_tracks(market=MARKET, limit=LIMIT, offset=OFFSET)
         likedTracks = response["items"]
-        for track in likedTracks:
-            singleTrack = Track()
-            singleTrack.songName = track["track"]["name"]
-            singleTrack.artist = track["track"]["artists"]
-            singleTrack.id = track["track"]["id"]
-            tracks.append(singleTrack)
-        if response["next"]:
-            OFFSET+=50
+
+        if likedTracks:
+            for track in likedTracks:
+                singleTrack = Track()
+                singleTrack.songName = track["track"]["name"]
+                singleTrack.artist = track["track"]["artists"]
+                singleTrack.id = track["track"]["id"]
+                tracks.append(singleTrack)
+            if response["next"]:
+                OFFSET+=50
+            else: 
+                end=True
         else:
             end=True
     return tracks
+
+def checkNewTracks(tracks):
+    numNewTracks = len(tracks)
+    configOffset = json.load(open("utils.json", "r"))
+    if configOffset["OFFSET"].strip()!= "" :
+        ## Se OFFSET è stato settato, riprendi la scansione nuovi brani da li
+        OFFSET = int(configOffset["OFFSET"])
+    else:
+        OFFSET=0
+    
+    if len(tracks)>OFFSET:
+        ## Significa che ci sono brani nuovi. Calcolo quanti sono
+        numNewTracks = len(tracks) - OFFSET
+    elif len(tracks) <= OFFSET:
+        numNewTracks = 0
+
+    OFFSET = len(tracks)
+                
+    configOffset["OFFSET"] = str(OFFSET)
+    with open("utils.json", 'w') as f:
+        f.write(json.dumps(configOffset, sort_keys=True, indent=4, separators=(',', ': ')))
+
+    return tracks[:numNewTracks]
 
 def createPlaylist():
     # ENDPOINT https://api.spotify.com/v1/users/{user_id}/playlists
@@ -84,6 +109,12 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secre
 
 #getCurrentSong()
 tracks = getUserLikedTracks()
-print("Hai messo 'mi piace' a " + str(len(tracks)) + " brani")
+#Trova solo i brani nuovi
+tracks = checkNewTracks(tracks)
+
+if tracks:
+    print("Sono stati scansionati nuovi " + str(len(tracks)) + " brani piaciuti")
+else:
+    print("Nessun nuovo brano piaciuto è stato riconosciuto")
 
 #createPlaylist()
