@@ -119,7 +119,33 @@ def addItemsToPlaylist(playlist_id, uri):
 
     user_id = sp.me()["id"]
     sp.playlist_add_items(playlist_id, [uri])
-    return
+
+def checkPlaylistItems(playlist_id, track_id):
+    # ENDPOINT https://api.spotify.com/v1/playlists/{playlist_id}/tracks
+    # PARAMETRI PER QUESTA CHIAMATA
+    # playlist_id (OBBLIGATORIO)    : l'id della playlist spotify
+    # market (OPZIONALE)            : se specificato, verranno ritornati solo contenuti presenti nel paese indicato
+    # fields (OPZIONALE)            : filtro sulla query. Se omesso, tutti i campi verranno ritornati
+    # limit (OPZIONALE)             : Numero massimo di elementi da restituire (fino a 50)
+    # offset (OPZIONALE)            : Da dove iniziare a restituire risultati
+
+    found = False
+    empty = False
+
+    MARKET="IT"
+
+    user_id = sp.me()["id"]
+
+    while not empty and not found:
+        response = sp.user_playlist_tracks(user_id, playlist_id, fields='items,uri,name,id,total', market='IT')
+        if not response["items"]:
+            empty = True
+        for song in response["items"]:
+            if song["track"]["id"] == track_id:
+                found = True
+                break
+        
+    return found
 
 class Track:
     songName = ""
@@ -168,7 +194,8 @@ for track in tracks:
             createdPlaylist = createPlaylist(playlistName)
 
         # Della playlist creata mi interessa createdPlaylist["id"] per poter aggiungere nuove tracce
-        print(createPlaylist)
+        print(createdPlaylist["name"])
         # Adesso sono certo che la playlist generata esista. Posso aggiungere la traccia
         # TODO: bisogna ancora gestire la traccia già esistente nella playlist
-        addItemsToPlaylist(createdPlaylist["id"], track.uri)
+        if not checkPlaylistItems(createdPlaylist["id"], track.id):
+            addItemsToPlaylist(createdPlaylist["id"], track.uri)
