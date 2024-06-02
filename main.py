@@ -42,6 +42,7 @@ def getUserLikedTracks():
                 singleTrack.songName = track["track"]["name"]
                 singleTrack.artist = track["track"]["artists"]
                 singleTrack.id = track["track"]["id"]
+                singleTrack.uri = track["track"]["uri"]
                 tracks.append(singleTrack)
             if response["next"]:
                 OFFSET+=50
@@ -85,7 +86,7 @@ def createPlaylist(name):
     
     #Spotify permette con lo stesso nome di creare anche più di una playlist. E' da evitare
     user_id = sp.me()["id"]
-    sp.user_playlist_create(user=user_id, name=name)
+    return sp.user_playlist_create(user=user_id, name=name)
 
 def retrievePlaylists():
     # ENDPOINT https://api.spotify.com/v1/users/{user_id}/playlists
@@ -97,14 +98,34 @@ def retrievePlaylists():
     ## N.B. il metodo user_playlists utilizza già i parametri limit=50, offset=0.
     ##      è necessario ridefinirlo per poter ottere risultati più di 50 playlist
     
-    #Spotify permette con lo stesso nome di creare anche più di una playlist. E' da evitare
     user_id = sp.me()["id"]
     return sp.user_playlists(user=user_id) # Ritorna le playlist dell'utente fino a un massimo di 50
+
+def checkPlaylistExists(name, playlists):
+    found = False
+    for playlist in playlists["items"]:
+            if name == playlist["name"]:
+                found = True
+                return playlist
+    return found
+
+def addItemsToPlaylist(playlist_id, uri):
+    # ENDPOINT https://api.spotify.com/v1/playlists/{playlist_id}/tracks
+    # PARAMETRI PER QUESTA CHIAMATA
+    # playlist_id (OBBLIGATORIO): l'ID spotify della playlist
+    # position (OPZIONALE)      : La posizione dove inserire l'eelemento. Per inserire l'elemento in prima posizione position=0
+    #                             Se omesso, la traccia sarà posta in coda alla playlist
+    #uris (OPZIONALE)           : l'URI della traccia da aggiungere. E' di tipo lista
+
+    user_id = sp.me()["id"]
+    sp.playlist_add_items(playlist_id, [uri])
+    return
 
 class Track:
     songName = ""
     artist = ""
     id = ""
+    uri = ""
 
 
 config = configparser.RawConfigParser()
@@ -116,12 +137,12 @@ REDIRECT_URI = config.get("Authentication","REDIRECT_URI")
 
 # multiple scopes
 # playlist-modify-public -> Necessario per interagire con le playlist
-oAuthscope = "user-read-email,user-read-private,user-library-read,user-read-playback-state,user-modify-playback-state,user-read-currently-playing, playlist-modify-public"
+oAuthscope = "user-read-email,user-read-private,user-library-read,user-read-playback-state,user-modify-playback-state,user-read-currently-playing, playlist-modify-public, playlist-modify-private"
 
 #autenticazione
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI,scope=oAuthscope))
 
-getCurrentSong()
+#getCurrentSong()
 tracks = getUserLikedTracks()
 #Trova solo i brani nuovi
 tracks = checkNewTracks(tracks)
@@ -131,4 +152,23 @@ if tracks:
 else:
     print("Nessun nuovo brano piaciuto è stato riconosciuto")
 
-#createPlaylist("Prova")
+playlists = retrievePlaylists()
+# Elementi utili: playlists["items"]["i"]["id"], playlists["items"]["i"]["name"]
+
+for track in tracks:
+    artists = track.artist # Restituisce una lista di artisti
+    for artist in artists:
+        playlistName = artist["name"] + "- PY"
+        print("Nome playlist generata: " + playlistName)
+        # Spotify permette con lo stesso nome di creare anche più di una playlist. E' da evitare
+        # Quindi verifico se la playlist esiste già. Se non esiste la creo
+        createdPlaylist = checkPlaylistExists(playlistName, playlists)
+        if createdPlaylist == False:
+            # Se la playlist non esiste, la creo e aggiungo la traccia
+            createdPlaylist = createPlaylist(playlistName)
+
+        # Della playlist creata mi interessa createdPlaylist["id"] per poter aggiungere nuove tracce
+        print(createPlaylist)
+        # Adesso sono certo che la playlist generata esista. Posso aggiungere la traccia
+        # TODO: bisogna ancora gestire la traccia già esistente nella playlist
+        addItemsToPlaylist(createdPlaylist["id"], track.uri)
