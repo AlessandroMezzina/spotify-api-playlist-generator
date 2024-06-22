@@ -52,6 +52,16 @@ def getUserLikedTracks():
             end=True
     return tracks
 
+def filterByArtist(tracks, artist):
+    filteredTracks = []
+    for track in tracks:
+        for singleArtist in track.artist:
+            ## Se l'artista è presente nella lista degli artisti del brano, aggiungilo alla lista. Controllo anche i featuring
+            if singleArtist['name'].lower() == artist.lower():
+                filteredTracks.append(track)
+                break
+    return filteredTracks
+
 def checkNewTracks(tracks):
     numNewTracks = len(tracks)
     configOffset = json.load(open("utils.json", "r"))
@@ -131,12 +141,13 @@ def checkPlaylistItems(playlist_id, track_id):
 
     found = False
     empty = False
+    finish = False
 
     MARKET="IT"
 
     user_id = sp.me()["id"]
 
-    while not empty and not found:
+    while not empty and not found and not finish:
         response = sp.user_playlist_tracks(user_id, playlist_id, fields='items,uri,name,id,total', market='IT')
         if not response["items"]:
             empty = True
@@ -144,6 +155,8 @@ def checkPlaylistItems(playlist_id, track_id):
             if song["track"]["id"] == track_id:
                 found = True
                 break
+        if not found:
+            finish = True
         
     return found
 
@@ -172,30 +185,46 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secre
 tracks = getUserLikedTracks()
 #Trova solo i brani nuovi
 tracks = checkNewTracks(tracks)
+artist = input("Inserisci l'artista da filtrare: ")
+tracks = filterByArtist(tracks, artist)
 
 if tracks:
     print("Sono stati scansionati nuovi " + str(len(tracks)) + " brani piaciuti")
 else:
-    print("Nessun nuovo brano piaciuto è stato riconosciuto")
+    print("Nessun nuovo brano piaciuto è stato riconosciuto per l'artista: " + artist)
 
 playlists = retrievePlaylists()
 # Elementi utili: playlists["items"]["i"]["id"], playlists["items"]["i"]["name"]
 
-for track in tracks:
-    artists = track.artist # Restituisce una lista di artisti
-    for artist in artists:
-        playlistName = artist["name"] + "- PY"
-        print("Nome playlist generata: " + playlistName)
-        # Spotify permette con lo stesso nome di creare anche più di una playlist. E' da evitare
-        # Quindi verifico se la playlist esiste già. Se non esiste la creo
-        createdPlaylist = checkPlaylistExists(playlistName, playlists)
-        if createdPlaylist == False:
-            # Se la playlist non esiste, la creo e aggiungo la traccia
-            createdPlaylist = createPlaylist(playlistName)
+# Spotify permette con lo stesso nome di creare anche più di una playlist. E' da evitare
+# Quindi verifico se la playlist esiste già. Se non esiste la creo
+playlistName = artist + "- PY"
+print("Nome playlist generata: " + playlistName)
+createdPlaylist = checkPlaylistExists(playlistName, playlists)
+if createdPlaylist == False:
+    # Se la playlist non esiste, la creo e aggiungo la traccia
+    createdPlaylist = createPlaylist(playlistName)
+# Adesso sono certo che la playlist generata esista. Posso aggiungere la traccia
 
-        # Della playlist creata mi interessa createdPlaylist["id"] per poter aggiungere nuove tracce
-        print(createdPlaylist["name"])
-        # Adesso sono certo che la playlist generata esista. Posso aggiungere la traccia
-        # TODO: bisogna ancora gestire la traccia già esistente nella playlist
-        if not checkPlaylistItems(createdPlaylist["id"], track.id):
-            addItemsToPlaylist(createdPlaylist["id"], track.uri)
+for track in tracks:
+    # Della playlist creata mi interessa createdPlaylist["id"] per poter aggiungere nuove tracce
+    if not checkPlaylistItems(createdPlaylist["id"], track.id):
+        addItemsToPlaylist(createdPlaylist["id"], track.uri)
+
+### Se volessi creare una playlist per ogni artista di ogni brano
+# for artist in artists:
+#     playlistName = artist["name"] + "- PY"
+#     print("Nome playlist generata: " + playlistName)
+#     # Spotify permette con lo stesso nome di creare anche più di una playlist. E' da evitare
+#     # Quindi verifico se la playlist esiste già. Se non esiste la creo
+#     createdPlaylist = checkPlaylistExists(playlistName, playlists)
+#     if createdPlaylist == False:
+#         # Se la playlist non esiste, la creo e aggiungo la traccia
+#         createdPlaylist = createPlaylist(playlistName)
+
+#     # Della playlist creata mi interessa createdPlaylist["id"] per poter aggiungere nuove tracce
+#     print(createdPlaylist["name"])
+#     # Adesso sono certo che la playlist generata esista. Posso aggiungere la traccia
+#     # TODO: bisogna ancora gestire la traccia già esistente nella playlist
+#     if not checkPlaylistItems(createdPlaylist["id"], track.id):
+#         addItemsToPlaylist(createdPlaylist["id"], track.uri)
