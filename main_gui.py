@@ -170,6 +170,9 @@ def updateStatus(message):
     window.update()
 
 def generatePlaylist():
+    global is_generating
+    is_generating = True
+
     artist = artistEntry.get()
     updateStatus("Generazione della playlist per l'artista: " + artist + "...")
     tracks = getUserLikedTracks()
@@ -196,10 +199,17 @@ def generatePlaylist():
     updateStatus("Playlist generata: " + playlistName)
 
     for track in tracks:
+        if not is_generating:
+            return
         # Della playlist creata mi interessa createdPlaylist["id"] per poter aggiungere nuove tracce
         if not checkPlaylistItems(createdPlaylist["id"], track.id):
             addItemsToPlaylist(createdPlaylist["id"], track.uri)
     updateStatus("Playlist aggiornata con successo!")
+
+def stopPlaylistGeneration():
+    global is_generating
+    is_generating = False
+    updateStatus("Generazione della playlist interrotta.")
 
 class Track:
     songName = ""
@@ -215,6 +225,8 @@ CLIENT_ID = config.get("Authentication","CLIENT_ID")
 CLIENT_SECRET = config.get("Authentication","CLIENT_SECRET")
 REDIRECT_URI = config.get("Authentication","REDIRECT_URI")
 
+is_generating = False  # Variabile per tenere traccia dello stato di generazione della playlist
+
 # multiple scopes
 # playlist-modify-public -> Necessario per interagire con le playlist
 oAuthscope = "user-read-email,user-read-private,user-library-read,user-read-playback-state,user-modify-playback-state,user-read-currently-playing, playlist-modify-public, playlist-modify-private"
@@ -223,31 +235,39 @@ oAuthscope = "user-read-email,user-read-private,user-library-read,user-read-play
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI,scope=oAuthscope))
 
 # Crea la finestra principale
-window = tk.Tk()
+window = ThemedTk(theme="yaru")  # Utilizza il tema 'yaru' per un aspetto simile a Material Design
 window.title("Generatore di Playlist Spotify")
 window.geometry("400x200")  # Imposta le dimensioni della finestra
-
-# Utilizza ttk per un aspetto migliorato dei widget
-style = ttk.Style()
-style.theme_use('clam')  # Sperimenta con temi diversi come 'alt', 'default', 'classic', 'clam'
+window.resizable(False, False)  # Impedisce all'utente di modificare le dimensioni della finestra
 
 # Crea un Frame per un layout migliore
 mainFrame = ttk.Frame(window, padding="10")
 mainFrame.pack(fill=tk.BOTH, expand=True)
+# Assicurati che le colonne si espandano adeguatamente
+mainFrame.grid_columnconfigure(0, weight=1)
+mainFrame.grid_columnconfigure(1, weight=1)
+
 
 # Aggiungi una casella di testo per l'artista
 artistLabel = ttk.Label(mainFrame, text="Inserisci l'artista:")
-artistLabel.pack(fill=tk.BOTH, pady=10)
+artistLabel.grid(row=0, column=0, pady=10, columnspan=2)  # Allinea al centro
 artistEntry = ttk.Entry(mainFrame)
-artistEntry.pack(fill=tk.BOTH, pady=10)
+artistEntry.grid(row=1, column=0, padx=5, pady=10, sticky="ew", columnspan=2)
 
 # Aggiungi un pulsante per generare la playlist
 generateButton = ttk.Button(mainFrame, text="Genera Playlist", command=generatePlaylist)
-generateButton.pack(pady=10)
+generateButton.config(width=20)  # Imposta la larghezza di generateButton
+generateButton.grid(row=2, column=0, pady=10)  # Occupa la colonna 0, espande da est a ovest
+# Aggiungi il bottone "Stop" accanto a "Genera Playlist"
+stopButton = ttk.Button(mainFrame, text="Stop", command=stopPlaylistGeneration)
+stopButton.config(width=20)      # Imposta la larghezza di stopButton
+stopButton.grid(row=2, column=1, pady=10)  # Occupa la colonna 1, espande da est a ovest
+
 
 # Crea l'etichetta per i messaggi di stato
 statusLabel = ttk.Label(mainFrame, text="In attesa della generazione...")
-statusLabel.pack()
+statusLabel.grid(row=3, column=0, columnspan=2, pady=10)  # Occupa 2 colonne
+#statusLabel.pack()
 
 # Avvia il loop principale
 window.mainloop()
