@@ -47,27 +47,32 @@ class FinestraPrincipale:
         # Assicurati che le colonne si espandano adeguatamente
         mainFrame.grid_columnconfigure(0, weight=1)
         mainFrame.grid_columnconfigure(1, weight=1)
+        mainFrame.grid_columnconfigure(2, weight=1)
 
 
         # Aggiungi una casella di testo per l'artista
         artistLabel = ttk.Label(mainFrame, text="Inserisci l'artista:")
-        artistLabel.grid(row=0, column=0, pady=10, columnspan=2)  # Allinea al centro
+        artistLabel.grid(row=0, column=0, pady=10, columnspan=3)  # Allinea al centro
         self.artistEntry = ttk.Entry(mainFrame)
-        self.artistEntry.grid(row=1, column=0, padx=5, pady=10, sticky="ew", columnspan=2)
+        self.artistEntry.grid(row=1, column=0, padx=5, pady=10, sticky="ew", columnspan=3)
 
         # Aggiungi un pulsante per generare la playlist
         generateButton = ttk.Button(mainFrame, text="Genera Playlist", command=self.generatePlaylist)
-        generateButton.config(width=20)  # Imposta la larghezza di generateButton
-        generateButton.grid(row=2, column=0, pady=10)  # Occupa la colonna 0, espande da est a ovest
+        generateButton.config(width=15)  # Imposta la larghezza di generateButton
+        generateButton.grid(row=2, column=0, pady=5)  # Occupa la colonna 0, espande da est a ovest
         # Aggiungi il bottone "Stop" accanto a "Genera Playlist"
         stopButton = ttk.Button(mainFrame, text="Stop", command=self.stopPlaylistGeneration)
-        stopButton.config(width=20)      # Imposta la larghezza di stopButton
-        stopButton.grid(row=2, column=1, pady=10)  # Occupa la colonna 1, espande da est a ovest
+        stopButton.config(width=15)      # Imposta la larghezza di stopButton
+        stopButton.grid(row=2, column=1, pady=5)  # Occupa la colonna 1, espande da est a ovest
+        # Aggiungi il bottone "Stop" accanto a "Genera Playlist"
+        stopButton = ttk.Button(mainFrame, text="Reset indice", command=self.reset_offset)
+        stopButton.config(width=15)      # Imposta la larghezza di stopButton
+        stopButton.grid(row=2, column=2, pady=5)  # Occupa la colonna 1, espande da est a ovest
 
 
         # Crea l'etichetta per i messaggi di stato
         self.statusLabel = ttk.Label(mainFrame, text="In attesa della generazione...")
-        self.statusLabel.grid(row=3, column=0, columnspan=2, pady=10)  # Occupa 2 colonne
+        self.statusLabel.grid(row=3, column=0, columnspan=3, pady=10)  # Occupa 2 colonne
     
     def generatePlaylist(self):
         global is_generating
@@ -115,6 +120,21 @@ class FinestraPrincipale:
         global is_generating
         is_generating = False
         self.updateStatus("Generazione della playlist interrotta.")
+    
+    def reset_offset(self):
+        # Percorso al file utils.json
+        file_path = 'utils.json'
+        
+        # Apri il file in modalità lettura e carica il suo contenuto
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+        
+        # Modifica il valore di OFFSET a 0
+        data['OFFSET'] = "0"
+        
+        # Salva il file con il nuovo contenuto
+        with open(file_path, 'w') as file:
+            json.dump(data, file, indent=4)
 
 # Funzioni per interagire con Spotify
 def getCurrentSong():
