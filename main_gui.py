@@ -13,6 +13,10 @@ from tkinter import messagebox
 from tkinter import ttk
 from ttkthemes import ThemedTk
 import webbrowser
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
+import urllib
+
 
 config = configparser.RawConfigParser()
 config.read('properties.properties')
@@ -303,24 +307,36 @@ def apri_finestra_principale():
 
 # Funzione per gestire l'autenticazione
 def autentica():
-    global sp
+    global sp, auth_code
+    auth_code = None
+
     sp_oauth = SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI, scope=oAuthscope)
     # Verifica se è già stata effettuata l'autenticazione
     token_info = sp_oauth.get_cached_token()
     if not token_info:
         auth_url = sp_oauth.get_authorize_url()
+        # Estrai la porta dal redirect_uri
+        #port = int(REDIRECT_URI.split(':')[-1])
+        port = 80
         try:
+            # Avvia il server locale su un thread separato
+            event = threading.Event()
+            server_thread = threading.Thread(target=start_local_server, args=(port, event))
+            server_thread.start()
             webbrowser.open(auth_url)
+            # Aspetta che il server locale riceva il codice di autorizzazione
+            event.wait()
             # Aspetta che l'utente confermi l'autenticazione
-            tk.messagebox.showinfo("Autenticazione", "Effettua l'accesso a Spotify, poi chiudi questa finestra.")
-            code = sp_oauth.parse_response_code(auth_url)
-            token_info = sp_oauth.get_access_token(code)
-            if token_info:
-                # Chiudi la finestra di autenticazione
-                mainFrame.destroy()
-                sp = spotipy.Spotify(auth=token_info['access_token'])
-                # Apri la finestra principale
-                apri_finestra_principale()
+            #tk.messagebox.showinfo("Autenticazione", "Effettua l'accesso a Spotify, poi chiudi questa finestra.")
+            if auth_code:
+                #code = sp_oauth.parse_response_code(auth_url)
+                token_info = sp_oauth.get_access_token(auth_code)
+                if token_info:
+                    # Chiudi la finestra di autenticazione
+                    mainFrame.destroy()
+                    sp = spotipy.Spotify(auth=token_info['access_token'])
+                    # Apri la finestra principale
+                    apri_finestra_principale()
         except Exception as e:
             tk.messagebox.showerror("Errore", str(e))
     else:
@@ -328,6 +344,31 @@ def autentica():
         mainFrame.destroy()
         sp = spotipy.Spotify(auth=token_info['access_token'])
         apri_finestra_principale()
+
+# Handler per gestire le richieste GET al server locale
+def make_request_handler(event):
+    class RequestHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            global auth_code
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(b"Autenticazione completata. Puoi chiudere questa finestra.")
+            # Estrai il codice di autorizzazione dall'URL
+            url_path = self.path
+            query_string = urllib.parse.urlparse(url_path).query
+            auth_code = urllib.parse.parse_qs(query_string).get('code', [None])[0]
+            # Segnala che abbiamo ottenuto il codice
+            event.set()
+    return RequestHandler
+
+# Funzione per avviare il server locale
+def start_local_server(port, event):
+    server_address = ('', port)
+    handler_class = make_request_handler(event)
+
+    httpd = HTTPServer(server_address, handler_class)
+    httpd.handle_request()
 
 # Codice principale
 if __name__ == "__main__":
