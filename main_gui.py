@@ -16,6 +16,7 @@ import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 import urllib
+from PIL import Image, ImageTk  # Importa Pillow per lavorare con formati di immagine come PNG o JPG
 
 
 config = configparser.RawConfigParser()
@@ -375,7 +376,7 @@ if __name__ == "__main__":
     window = ThemedTk(theme="yaru")  # Utilizza il tema 'yaru' per un aspetto simile a Material Design
     window.title("Generatore di Playlist Spotify")
     window.geometry("400x200")  # Imposta le dimensioni della finestra
-    #window.resizable(False, False)  # Impedisce all'utente di modificare le dimensioni della finestra
+    window.resizable(False, False)  # Impedisce all'utente di modificare le dimensioni della finestra
 
     # Crea la finestra di autenticazione
     # Crea un Frame per un layout migliore
@@ -390,14 +391,20 @@ if __name__ == "__main__":
     mainFrame.grid_rowconfigure(1, weight=1)
     mainFrame.grid_rowconfigure(2, weight=1)
 
-    # Aggiungi una casella di testo per l'artista
-    artistLabel = ttk.Label(mainFrame, text="Clicca per autenticarti con Spotify")
+    # Aggiungi una label di selezione servizio
+    artistLabel = ttk.Label(mainFrame, text="Seleziona il servizio di autenticazione")
     # Centra l'etichetta orizzontalmente e verticalmente
     artistLabel.grid(row=0, column=0, columnspan=2, pady=10)
 
-    # Aggiungi un pulsante per generare la playlist
-    generateButton = ttk.Button(mainFrame, text="Login", command=autentica)
-    generateButton.config(width=20)  # Imposta la larghezza di generateButton
+    # Aggiungi un pulsante per effettuare il login
+    # Carica l'immagine e ridimensionala
+    original_image = Image.open('resources/spotify.png')
+    resized_image = original_image.resize((50, 20))
+    photo = ImageTk.PhotoImage(resized_image)
+    generateButton = ttk.Button(mainFrame, image=photo, command=autentica)
+    generateButton.image = photo  # Mantieni un riferimento all'immagine per evitare la garbage collection
+    generateButton.config(width=50)  # Imposta la larghezza di generateButton
+
     # Centra il pulsante orizzontalmente e verticalmente
     generateButton.grid(row=1, column=0, columnspan=2, pady=10)
 
