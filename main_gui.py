@@ -78,9 +78,10 @@ class FinestraPrincipale:
         self.combobox.grid(row=1, column=1, sticky="ew", padx=10, pady=10)
 
         # Aggiungi un pulsante per generare la playlist
-        generateButton = ttk.Button(mainFrame, text="Genera Playlist", command=self.generatePlaylist)
-        generateButton.config(width=20)  # Imposta la larghezza di generateButton
-        generateButton.grid(row=2, column=0, pady=5)  # Occupa la colonna 0, espande da est a ovest
+        self.generateButton = ttk.Button(mainFrame, text="Genera Playlist", command=self.generatePlaylist)
+        self.generateButton.config(width=20)  # Imposta la larghezza di generateButton
+        self.generateButton.grid(row=2, column=0, pady=5)  # Occupa la colonna 0, espande da est a ovest
+        self.generateButton.config(state='disabled')  # Disabilita il pulsante finché non viene selezionato un artista
         # Aggiungi il bottone "Stop" accanto a "Genera Playlist"
         stopButton = ttk.Button(mainFrame, text="Stop", command=self.stopPlaylistGeneration)
         stopButton.config(width=10)      # Imposta la larghezza di stopButton
@@ -101,6 +102,12 @@ class FinestraPrincipale:
         if results:
             self.combobox['values'] = results
             self.combobox.set(results[0])  # Imposta il primo valore di results come selezionato nella combobox
+            self.combobox.state(['!disabled'])
+            self.generateButton.config(state='normal')
+        else:
+            self.combobox['values'] = ("Nessun artista trovato")
+            self.combobox.state(['disabled'])  # Disabilita la combobox
+            self.generateButton.config(state='disabled')
 
     def generatePlaylist(self):
         global is_generating
