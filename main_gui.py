@@ -44,6 +44,8 @@ class Track:
 
 # Classe per la finestra principale
 class FinestraPrincipale:
+    artists = []
+
     def __init__(self, master=None):
         # Crea la finestra principale
         # Crea un Frame per un layout migliore
@@ -53,37 +55,58 @@ class FinestraPrincipale:
         mainFrame.grid_columnconfigure(0, weight=1)
         mainFrame.grid_columnconfigure(1, weight=1)
         mainFrame.grid_columnconfigure(2, weight=1)
+        mainFrame.grid_columnconfigure(3, weight=1)
 
 
         # Aggiungi una casella di testo per l'artista
         artistLabel = ttk.Label(mainFrame, text="Inserisci l'artista:")
-        artistLabel.grid(row=0, column=0, pady=10, columnspan=3)  # Allinea al centro
+        artistLabel.grid(row=0, column=0, pady=5, sticky="e")  # Allinea al centro
         self.artistEntry = ttk.Entry(mainFrame)
-        self.artistEntry.grid(row=1, column=0, padx=5, pady=10, sticky="ew", columnspan=3)
+        self.artistEntry.config(width=35)  # Imposta la larghezza di generateButton
+        self.artistEntry.grid(row=0, column=1, pady=10)
+        # Aggiungi un pulsante per generare la playlist
+        cercaButton = ttk.Button(mainFrame, text="Cerca", command=self.findArtist)
+        cercaButton.config(width=5)  # Imposta la larghezza di generateButton
+        cercaButton.grid(row=0, column=2, pady=5, sticky="w", padx=(15,0))  # Occupa la colonna 0, espande da est a ovest
+
+        foundLabel = ttk.Label(mainFrame, text="Artisti trovati:")
+        foundLabel.grid(row=1, column=0, pady=5, sticky="e")  # Allinea al centro
+        # Crea una Combobox
+        self.combobox = ttk.Combobox(mainFrame)
+        self.combobox['values'] = self.artists
+        # Posiziona la Combobox nella nuova riga e la fa espandere in larghezza
+        self.combobox.grid(row=1, column=1, sticky="ew", padx=10, pady=10)
 
         # Aggiungi un pulsante per generare la playlist
         generateButton = ttk.Button(mainFrame, text="Genera Playlist", command=self.generatePlaylist)
-        generateButton.config(width=15)  # Imposta la larghezza di generateButton
+        generateButton.config(width=20)  # Imposta la larghezza di generateButton
         generateButton.grid(row=2, column=0, pady=5)  # Occupa la colonna 0, espande da est a ovest
         # Aggiungi il bottone "Stop" accanto a "Genera Playlist"
         stopButton = ttk.Button(mainFrame, text="Stop", command=self.stopPlaylistGeneration)
-        stopButton.config(width=15)      # Imposta la larghezza di stopButton
+        stopButton.config(width=10)      # Imposta la larghezza di stopButton
         stopButton.grid(row=2, column=1, pady=5)  # Occupa la colonna 1, espande da est a ovest
-        # Aggiungi il bottone "Stop" accanto a "Genera Playlist"
-        stopButton = ttk.Button(mainFrame, text="Reset indice", command=self.reset_offset)
-        stopButton.config(width=15)      # Imposta la larghezza di stopButton
-        stopButton.grid(row=2, column=2, pady=5)  # Occupa la colonna 1, espande da est a ovest
+        # Aggiungi il bottone "Reset" accanto a "Genera Playlist"
+        resetButton = ttk.Button(mainFrame, text="Reset indice", command=self.reset_offset)
+        resetButton.config(width=20)      # Imposta la larghezza di resetButton
+        resetButton.grid(row=2, column=2, pady=5)  # Occupa la colonna 1, espande da est a ovest
 
 
         # Crea l'etichetta per i messaggi di stato
         self.statusLabel = ttk.Label(mainFrame, text="In attesa della generazione...")
         self.statusLabel.grid(row=3, column=0, columnspan=3, pady=10)  # Occupa 2 colonne
     
+    def findArtist(self):
+        artist = self.artistEntry.get()
+        results = find_artists_similar_to(artist)
+        if results:
+            self.combobox['values'] = results
+            self.combobox.set(results[0])  # Imposta il primo valore di results come selezionato nella combobox
+
     def generatePlaylist(self):
         global is_generating
         is_generating = True
 
-        artist = self.artistEntry.get()
+        artist = self.combobox.get()
         self.updateStatus("Generazione della playlist per l'artista: " + artist + "...")
         tracks = getUserLikedTracks()
         #Trova solo i brani nuovi
@@ -249,6 +272,13 @@ def retrievePlaylists():
 
     user_id = sp.me()["id"]
     return sp.user_playlists(user=user_id) # Ritorna le playlist dell'utente fino a un massimo di 50
+
+def find_artists_similar_to(artist):
+    # Esegue la ricerca su Spotify
+        search_results = sp.search(q='artist:' + artist, type='artist', limit=20)
+        artists = search_results['artists']['items']
+        similar_artists = [artist['name'] for artist in artists]
+        return similar_artists
 
 def checkPlaylistExists(name, playlists):
     found = False
